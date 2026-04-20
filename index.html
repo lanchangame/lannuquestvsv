@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ランぬクエスト VSヴェイン</title>
+    <meta property="og:title" content="ランぬクエスト VSヴェイン（にたどり端くまでに俺が散らかした本">
+    <meta property="og:description" content="なんでこんなに本が散らかってるんだ！？">
+    <meta property="og:image" content="https://lanchangame.github.io/lannuquestvsv/image.png">
+    <meta property="og:url" content="https://lanchangame.github.io/lannuquestvsv/">
+    <meta name="twitter:card" content="summary_large_image">
+
+    
+    <style>
+        body { margin:0; background:#1a1a1a; display:flex; flex-direction:column; align-items:center; min-height:100vh; overflow-y:auto; overflow-x:hidden; font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif; padding:20px 0 50px; touch-action:manipulation; }
+        #game-viewport { position:relative; width:320px; height:400px; border:4px solid #8b4513; border-radius:12px; overflow:hidden; background:#3e4e5e; box-shadow:0 0 30px rgba(139,69,19,0.4); opacity:0; transition:opacity 0.5s; touch-action:none; }
+        #start-screen { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; text-align:center; padding:20px; box-sizing:border-box; }
+        .title-img { max-width:280px; height:auto; margin-bottom:15px; background:transparent; padding:0; border-radius:0; filter:none; }
+        .start-message { font-size:11px; line-height:1.5; margin-bottom:20px; }
+        .note { color:#888; font-size:9px; }
+        .btn-start { background:#8b4513; color:#fff; border:2px solid #ffd700; padding:12px 35px; border-radius:25px; font-weight:bold; font-size:16px; cursor:pointer; box-shadow:0 4px 0 #5d2e0d; touch-action:manipulation; }
+        #game-bg { position:absolute; top:0; left:0; width:100%; height:100%; background:url('haikei.png') center/cover; opacity:0.2; z-index:0; pointer-events:none; }
+        #game-world { position:absolute; width:100%; height:2600px; top:-2200px; background:linear-gradient(#5d4037 3px, transparent 3px) repeat-y 0 0 / 100% 50px; z-index:1; }
+        #player { position:absolute; width:50px; height:50px; background-size:contain; background-repeat:no-repeat; background-position:center; z-index:10; }
+        .book, .dog { position:absolute; font-size:28px; width:28px; height:28px; display:flex; justify-content:center; align-items:center; z-index:5; filter:drop-shadow(0 0 5px rgba(0,0,0,0.5)); }
+        .book { animation:flyBook .3s infinite alternate ease-in-out; }
+        @keyframes flyBook { from { transform:rotate(-5deg); } to { transform:rotate(5deg); } }
+        .dog { animation:jump .5s infinite alternate ease-in-out; z-index:6; }
+        @keyframes jump { from { transform:translateY(0); } to { transform:translateY(-10px); } }
+        #goal { position:absolute; top:50px; left:125px; width:60px; height:60px; font-size:60px; display:flex; justify-content:center; align-items:center; z-index:5; }
+        #ui-panel { position:absolute; top:5px; left:5px; color:#fff; background:rgba(0,0,0,0.6); padding:5px 10px; border-radius:12px; font-size:10px; font-weight:700; z-index:100; pointer-events:none; line-height:1.4; }
+        #timer { transition: color 0.3s, font-size 0.3s; display: inline-block; }
+        .timer-hurry { color: #ff4500 !important; animation: pulse 0.5s infinite alternate; }
+        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.3); } }
+        #custom-dialog { display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:260px; background:rgba(30,40,50,0.98); border:3px solid #8b4513; border-radius:15px; color:#fff; padding:20px; text-align:center; z-index:1000; box-shadow:0 0 50px #000; }
+        #custom-dialog h2 { font-size:18px; color:#ffd700; margin:0 0 10px; }
+        #custom-dialog input { width:80%; padding:10px; margin:10px 0; border-radius:5px; border:2px solid #8b4513; background:#000; color:#fff; font-size:16px; text-align:center; }
+        .dialog-btn-container { display:flex; flex-direction:column; gap:10px; margin-top:15px; }
+        #custom-dialog button { width:100%; padding:12px; border-radius:8px; border:none; cursor:pointer; font-weight:700; font-size:13px; }
+        .btn-save { background:#8b4513; color:#fff; }
+        .btn-continue, .btn-retry { background:#8b4513 !important; color:#fff !important; border:2px solid #ffd700 !important; }
+        .btn-share { background:#1da1f2; color:#fff; }
+        #ranking-display { position:absolute; bottom:5px; left:5px; background:rgba(0,0,0,0.8); color:#ffd700; padding:6px; border-radius:8px; font-size:9px; z-index:100; pointer-events:none; width:130px; border:1px solid #4a0000; }
+        #controls { display:grid; grid-template-columns:repeat(3,60px); grid-template-rows:repeat(2,60px); gap:15px; margin-top:20px; user-select:none; touch-action:manipulation; }
+        .btn { width:60px; height:60px; background:rgba(255,255,255,0.1); border:2px solid #fff; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:24px; color:#fff; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+        .btn:active { background:rgba(255,255,255,0.4); }
+        .up { grid-column:2; grid-row:1; } .left { grid-column:1; grid-row:2; } .down { grid-column:2; grid-row:2; } .right { grid-column:3; grid-row:2; }
+        #credits { margin-top:40px; color:#888; font-size:11px; text-align:center; line-height:1.6; }
+        .credit-item { margin:0 10px; display:inline-block; }
+    </style>
+</head>
+<body>
+    <div id="game-viewport">
+        <div id="start-screen">
+            <img src="title.png" alt="タイトル" class="title-img">
+            <div class="start-message">
+                十字キーまたはボタンでランぬを操作して<br>散らかった本を避け<br>ヴェインのクッキーをゲットしよう！<br><br>ぬいぐるみ🐶に出会ったらラッキー！<br>スコアが上がるし少しの間無敵になるぞ<br><br>
+                <span class="note">スコアや名前はブラウザ内でのみ保存されます。</span><br>
+                <span class="note">音が出ますのでご注意ください。</span><br>
+                <span class="note">非公式同人ゲームです。</span>
+            </div>
+            <button class="btn-start" onclick="startGame()">START</button>
+        </div>
+        <div id="game-bg"></div>
+        <div id="ui-panel">クッキーまで: <span id="dist">--</span>m<br>残り時間: <span id="timer">40.0</span>s<br>LIFE: <span id="life-icons">❤️❤️❤️❤️</span></div>
+        <div id="game-world"><div id="player"></div><div id="goal">🍪</div></div>
+        <div id="custom-dialog">
+            <h2 id="dialog-title">RESULT</h2><div id="dialog-text" style="font-size:13px;line-height:1.5;margin-bottom:10px;"></div>
+            <div id="input-area"><input type="text" id="player-name" maxlength="8" placeholder="団長の名前を教えてくれ"></div>
+            <div class="dialog-btn-container">
+                <button id="btn-action-continue" class="btn-continue" style="display:none;">ここからコンティニュー</button>
+                <button id="btn-action-save" class="btn-save">スコアを保存して次へ</button>
+                <button id="btn-action-share" class="btn-share">スコアを𝕏に投稿してくれ</button>
+                <button id="btn-action-retry" class="btn-retry">最初から挑戦</button>
+            </div>
+        </div>
+        <div id="ranking-display"><strong>ハイスコア</strong><br><span id="rank-list">記録なし</span></div>
+    </div>
+    <div id="controls">
+        <div class="btn up" id="btn-up">▲</div><div class="btn left" id="btn-left">◀</div><div class="btn down" id="btn-down">▼</div><div class="btn right" id="btn-right">▶</div>
+    </div>
+    <div id="credits"><span class="credit-item">ゲーム制作：ろかす</span><span class="credit-item">イラスト：水田</span></div>
+
+    <script>
+        const viewport=document.getElementById('game-viewport'), world=document.getElementById('game-world'), playerElement=document.getElementById('player');
+        const timerElement=document.getElementById('timer'), distElement=document.getElementById('dist'), lifeIconsElement=document.getElementById('life-icons');
+        const rankListElement=document.getElementById('rank-list'), dialog=document.getElementById('custom-dialog'), dialogTitle=document.getElementById('dialog-title');
+        const dialogText=document.getElementById('dialog-text'), inputArea=document.getElementById('input-area'), nameInput=document.getElementById('player-name');
+        const btnSave=document.getElementById('btn-action-save'), btnShare=document.getElementById('btn-action-share'), btnRetry=document.getElementById('btn-action-retry'), btnContinue=document.getElementById('btn-action-continue'), startScreen=document.getElementById('start-screen');
+        const charaImg=new Image(); charaImg.src='chara.png'; charaImg.onload=()=>{playerElement.style.backgroundImage=`url('${charaImg.src}')`; viewport.style.opacity='1';}; charaImg.onerror=()=>{playerElement.style.backgroundColor='#3498db'; viewport.style.opacity='1';};
+        
+        let player={x:135, y:2450}, enemies=[], items=[], gameActive=false, startTime, finalScore, shareText="", life=4, invincibilityFrames=0, damagePenalty=0;
+        let lastTickSecond = 40, dogCount = 0, speedBoostTimer = 0, hasContinued = false, dogPoints = 0;
+        const viewHeight=400, RANKING_KEY='lannu_ranking_v2', TIME_LIMIT = 40000;
+
+        const keysPressed = {};
+
+        let audioCtx = null;
+        function playSE(type) {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination); const now = audioCtx.currentTime;
+            if (type === 'start') { osc.type = 'sine'; osc.frequency.setValueAtTime(440, now); osc.frequency.exponentialRampToValueAtTime(880, now + 0.1); gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.1); osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'tick') { osc.type = 'sine'; osc.frequency.setValueAtTime(1000, now); gain.gain.setValueAtTime(0.05, now); gain.gain.linearRampToValueAtTime(0, now + 0.05); osc.start(now); osc.stop(now + 0.05);
+            } else if (type === 'move') { osc.type = 'sine'; osc.frequency.setValueAtTime(880, now); osc.frequency.exponentialRampToValueAtTime(440, now + 0.05); gain.gain.setValueAtTime(0.05, now); gain.gain.linearRampToValueAtTime(0, now + 0.05); osc.start(now); osc.stop(now + 0.05);
+            } else if (type === 'damage') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(220, now); osc.frequency.linearRampToValueAtTime(110, now + 0.1); gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.2); osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'item') { osc.type = 'sine'; osc.frequency.setValueAtTime(660, now); osc.frequency.linearRampToValueAtTime(1320, now + 0.1); gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.1); osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'goal') { [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => { const o = audioCtx.createOscillator(); const g = audioCtx.createGain(); o.type = 'square'; o.connect(g); g.connect(audioCtx.destination); o.frequency.setValueAtTime(freq, now + i * 0.1); g.gain.setValueAtTime(0.05, now + i * 0.1); g.gain.linearRampToValueAtTime(0, now + i * 0.1 + 0.3); o.start(now + i * 0.1); o.stop(now + i * 0.1 + 0.3); }); }
+        }
+
+        displayRanking(); updateView();
+
+        function startGame(){ 
+            playSE('start'); startScreen.style.display='none'; gameActive=true; startTime=Date.now(); 
+            setInterval(createEnemy, 250); 
+            setInterval(createDog, 4500); 
+            requestAnimationFrame(loop); 
+        }
+
+        function updateView(){
+            playerElement.style.left=player.x+'px'; playerElement.style.top=player.y+'px';
+            let s=Math.max(0, Math.min(2200, player.y-viewHeight/2)); world.style.top=-s+'px';
+            distElement.innerText=Math.max(0, Math.floor(player.y-50));
+            let i=""; for(let j=0; j<4; j++) i+=j<life?"❤️":"🖤"; lifeIconsElement.innerText=i;
+            playerElement.style.opacity=(invincibilityFrames>0)?((invincibilityFrames%10<5)?"0.3":"1"):"1";
+        }
+
+        function movePlayer(d){
+            if(!gameActive)return; 
+            let speed = (speedBoostTimer > 0) ? 45 : 24;
+            if(d==='up')player.y-=speed; if(d==='down')player.y+=speed; if(d==='left')player.x-=speed; if(d==='right')player.x+=speed;
+            player.x=Math.max(0,Math.min(270,player.x)); player.y=Math.max(0,Math.min(2540,player.y));
+            playSE('move'); updateView(); if(player.y<120&&player.x>100&&player.x<170){gameActive=false; playSE('goal'); showResult(true);}
+        }
+
+        function addControl(id,d){ 
+            let el=document.getElementById(id); 
+            el.addEventListener('touchstart',e=>{
+                e.preventDefault(); 
+                if(!keysPressed[id]){
+                    movePlayer(d);
+                    keysPressed[id] = true;
+                }
+            },{passive:false}); 
+            el.addEventListener('touchend',()=>keysPressed[id] = false);
+            el.addEventListener('mousedown',()=>{
+                if(!keysPressed[id]){
+                    movePlayer(d);
+                    keysPressed[id] = true;
+                }
+            }); 
+            el.addEventListener('mouseup',()=>keysPressed[id] = false);
+            el.addEventListener('mouseleave',()=>keysPressed[id] = false);
+        }
+        addControl('btn-up','up'); addControl('btn-down','down'); addControl('btn-left','left'); addControl('btn-right','right');
+
+        window.addEventListener('keydown',e=>{
+            if(!gameActive) return;
+            const key = e.key;
+            if(key.includes('Arrow') && !keysPressed[key]){
+                movePlayer(key.replace('Arrow','').toLowerCase());
+                keysPressed[key] = true; 
+            }
+        });
+        window.addEventListener('keyup',e=>{
+            keysPressed[e.key] = false; 
+        });
+
+        function createEnemy(){
+            if(!gameActive)return; let eDiv=document.createElement('div'); eDiv.className='book'; eDiv.innerText='📕';
+            let x=Math.random()*290, y=Math.max(10,player.y-450-(Math.random()*200)); eDiv.style.left=x+'px'; eDiv.style.top=y+'px'; world.appendChild(eDiv);
+            enemies.push({el:eDiv, baseX:x, x:x+14, y:y+14, wobbleOffset:Math.random()*10});
+        }
+
+        function createDog(){
+            if(!gameActive || dogCount >= 3) return;
+            let dDiv=document.createElement('div'); dDiv.className='dog'; dDiv.innerText='🐶';
+            let x=Math.random()*290, y=Math.max(10,player.y-450-(Math.random()*200)); dDiv.style.left=x+'px'; dDiv.style.top=y+'px'; world.appendChild(dDiv);
+            items.push({el:dDiv, x:x+14, y:y+14}); dogCount++;
+        }
+
+        function moveEntities(){
+            if(!gameActive)return;
+            let elapsed = Date.now() - startTime; let remaining = Math.max(0, (TIME_LIMIT - elapsed) / 1000); timerElement.innerText = remaining.toFixed(1);
+            if (remaining <= 10) { timerElement.classList.add('timer-hurry'); if (Math.floor(remaining) < lastTickSecond && remaining <= 5) { playSE('tick'); lastTickSecond = Math.floor(remaining); }
+            } else { timerElement.classList.remove('timer-hurry'); }
+            if (elapsed >= TIME_LIMIT) { gameActive = false; showResult(false, true); return; }
+            if(invincibilityFrames>0)invincibilityFrames--; if(speedBoostTimer>0)speedBoostTimer--;
+            const pX=player.x+25, pY=player.y+25;
+            enemies.forEach((e,n)=>{
+                e.y+=4.0; const wobble=Math.sin((e.y/50)+e.wobbleOffset)*2; const cX=e.baseX+wobble;
+                if(e.el){e.el.style.top=(e.y-14)+'px'; e.el.style.left=cX+'px';} e.x=cX+14;
+                if(Math.sqrt((e.x-pX)**2+(e.y-pY)**2)<25&&invincibilityFrames<=0){
+                    life--; damagePenalty+=4000; invincibilityFrames=60; playSE('damage'); updateView(); if(life<=0){gameActive=false; showResult(false);}
+                }
+                if(e.y>player.y+600){if(e.el)e.el.remove(); enemies.splice(n,1);}
+            });
+            items.forEach((it,n)=>{
+                it.y+=4.5; if(it.el)it.el.style.top=(it.y-14)+'px';
+                if(Math.sqrt((it.x-pX)**2+(it.y-pY)**2)<30){
+                    playSE('item'); dogPoints+=1000; speedBoostTimer=240; invincibilityFrames=150; if(it.el)it.el.remove(); items.splice(n,1);
+                }
+                if(it.y>player.y+600){if(it.el)it.el.remove(); items.splice(n,1);}
+            });
+        }
+
+        function showResult(w, isTimeUp = false){
+            dialog.style.display="block"; btnContinue.style.display="none";
+            if(!w){ 
+                dialogTitle.innerText = isTimeUp ? "TIME UP" : "GAME OVER"; 
+                dialogText.innerHTML = isTimeUp ? "ランちゃん、何してるの？<br>もしかして、部屋が散らかっているのか…？" : "おやつはお預けだ…！<br>ランちゃん！先に部屋の片付けするぞ！"; 
+                inputArea.style.display="none"; btnSave.style.display=btnShare.style.display="none"; btnRetry.style.display="block";
+                if(!isTimeUp) btnContinue.style.display="block"; return; 
+            }
+            let t=((Date.now()-startTime)/1000).toFixed(1); 
+            finalScore = hasContinued ? 0 : Math.max(100, 28000 - Math.floor(t * 600) - damagePenalty + dogPoints);
+            let rating = hasContinued ? "【コンティニューしてクリア】\nランちゃん、部屋散らかしてるだろ！<br>これ食べたら片付けな！" : (finalScore>=20000?"★★★\nランちゃん、お疲れさま！<br>休憩にクッキーはどうだ？":finalScore>=13000?"★★☆\nクッキー焼いたぜ！<br>ランちゃんって甘いものが好きだよな～！":"★☆☆\nランちゃん、部屋に足の踏み場ないじゃん！");
+            dialogTitle.innerText="★CLEAR!★"; dialogText.innerHTML=`うまそうなクッキーだ！<br><br>${rating.replace(/\n/g,'<br>')}<br><br>タイム: ${t}秒 / スコア: ${finalScore}点`;
+            
+            const shareRating = rating.replace(/<br>/g, ' ');
+            shareText=`【非公式同人ゲーム ランぬクエストVSヴェイン】をクリア！ 評価: ${shareRating.replace(/\n/g,'')} スコア: ${finalScore}点 #ランぬクエストヴェイン戦 https://lanchangame.github.io/lannuquestvsv/`;
+            
+            inputArea.style.display="block"; btnSave.style.display=btnShare.style.display="block"; btnRetry.style.display="none";
+        }
+
+        btnContinue.onclick = () => { life = 4; hasContinued = true; dialog.style.display = "none"; gameActive = true; requestAnimationFrame(loop); updateView(); };
+        btnSave.onclick=()=>{saveScore(nameInput.value||"おやつ大好きランぬ",finalScore); location.reload();};
+        btnShare.onclick=()=>{window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`,'_blank');};
+        btnRetry.onclick=()=>location.reload();
+        function saveScore(n,s){let r=JSON.parse(localStorage.getItem(RANKING_KEY))||[]; r.push({name:n,score:s}); r.sort((a,b)=>b.score - a.score); r=r.slice(0,5); localStorage.setItem(RANKING_KEY,JSON.stringify(r));}
+        function displayRanking(){let r=JSON.parse(localStorage.getItem(RANKING_KEY))||[]; if(!r.length)return; let h=""; r.forEach((t,i)=>{let n=t.name.length>7?t.name.substring(0,6)+'…':t.name; h+=`${i+1}. ${n} (${t.score})<br>`;}); rankListElement.innerHTML=h;}
+        function loop(){ if(gameActive){ moveEntities(); updateView(); requestAnimationFrame(loop); } }
+    </script>
+</body>
+</html>
