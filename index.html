@@ -215,7 +215,7 @@
             }
             let t=((Date.now()-startTime)/1000).toFixed(1); 
             finalScore = hasContinued ? 0 : Math.max(100, 28000 - Math.floor(t * 600) - damagePenalty + dogPoints);
-            let rating = hasContinued ? "【コンティニューしてクリア】\nランちゃん、部屋散らかしてるだろ！<br>これ食べたら片付けな！" : (finalScore>=20000?"★★★\nランちゃん、お疲れさま！<br>休憩にクッキーはどうだ？":finalScore>=13000?"★★☆\nクッキー焼いたぜ！<br>ランちゃんって甘いものが好きだよな～！":"★☆☆\nランちゃん、部屋に足の踏み場ないじゃん！");
+            let rating = hasContinued ? "【コンティニューしてクリア】\nランちゃん、部屋散らかしてるだろ！<br>これ食べたら片付けな！" : (finalScore>=12000?"★★★\nランちゃん、お疲れさま！<br>休憩にクッキーはどうだ？":finalScore>=8000?"★★☆\nクッキー焼いたぜ！<br>ランちゃんって甘いものが好きだよな～！":"★☆☆\nランちゃん、部屋に足の踏み場ないじゃん！");
             dialogTitle.innerText="★CLEAR!★"; dialogText.innerHTML=`うまそうなクッキーだ！<br><br>${rating.replace(/\n/g,'<br>')}<br><br>タイム: ${t}秒 / スコア: ${finalScore}点`;
             
             const shareRating = rating.replace(/<br>/g, ' ');
