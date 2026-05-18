@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ランぬクエスト VSヴェイン</title>
-    <meta property="og:title" content="ランぬクエスト VSヴェイン（にたどり端くまでに俺が散らかした本">
+    <meta property="og:title" content="ランぬクエスト VSヴェイン（にたどり端くまでに俺が散らかした本）">
     <meta property="og:description" content="なんでこんなに本が散らかってるんだ！？">
     <meta property="og:image" content="https://lanchangame.github.io/lannuquestvsv/image.png">
     <meta property="og:url" content="https://lanchangame.github.io/lannuquestvsv/">
@@ -91,6 +91,7 @@
         
         let player={x:135, y:2450}, enemies=[], items=[], gameActive=false, startTime, finalScore, shareText="", life=4, invincibilityFrames=0, damagePenalty=0;
         let lastTickSecond = 40, dogCount = 0, speedBoostTimer = 0, hasContinued = false, dogPoints = 0;
+        let lastFrameTime = 0;
         const viewHeight=400, RANKING_KEY='lannu_ranking_v2', TIME_LIMIT = 40000;
 
         const keysPressed = {};
@@ -113,6 +114,7 @@
 
         function startGame(){ 
             playSE('start'); startScreen.style.display='none'; gameActive=true; startTime=Date.now(); 
+            lastFrameTime = 0;
             setInterval(createEnemy, 250); 
             setInterval(createDog, 4500); 
             requestAnimationFrame(loop); 
@@ -180,16 +182,16 @@
             items.push({el:dDiv, x:x+14, y:y+14}); dogCount++;
         }
 
-        function moveEntities(){
+        function moveEntities(dtMultiplier){
             if(!gameActive)return;
             let elapsed = Date.now() - startTime; let remaining = Math.max(0, (TIME_LIMIT - elapsed) / 1000); timerElement.innerText = remaining.toFixed(1);
             if (remaining <= 10) { timerElement.classList.add('timer-hurry'); if (Math.floor(remaining) < lastTickSecond && remaining <= 5) { playSE('tick'); lastTickSecond = Math.floor(remaining); }
             } else { timerElement.classList.remove('timer-hurry'); }
             if (elapsed >= TIME_LIMIT) { gameActive = false; showResult(false, true); return; }
-            if(invincibilityFrames>0)invincibilityFrames--; if(speedBoostTimer>0)speedBoostTimer--;
+            if(invincibilityFrames>0)invincibilityFrames -= dtMultiplier; if(speedBoostTimer>0)speedBoostTimer -= dtMultiplier;
             const pX=player.x+25, pY=player.y+25;
             enemies.forEach((e,n)=>{
-                e.y+=4.0; const wobble=Math.sin((e.y/50)+e.wobbleOffset)*2; const cX=e.baseX+wobble;
+                e.y+=4.0 * dtMultiplier; const wobble=Math.sin((e.y/50)+e.wobbleOffset)*2; const cX=e.baseX+wobble;
                 if(e.el){e.el.style.top=(e.y-14)+'px'; e.el.style.left=cX+'px';} e.x=cX+14;
                 if(Math.sqrt((e.x-pX)**2+(e.y-pY)**2)<25&&invincibilityFrames<=0){
                     life--; damagePenalty+=4000; invincibilityFrames=60; playSE('damage'); updateView(); if(life<=0){gameActive=false; showResult(false);}
@@ -197,7 +199,7 @@
                 if(e.y>player.y+600){if(e.el)e.el.remove(); enemies.splice(n,1);}
             });
             items.forEach((it,n)=>{
-                it.y+=4.5; if(it.el)it.el.style.top=(it.y-14)+'px';
+                it.y+=4.5 * dtMultiplier; if(it.el)it.el.style.top=(it.y-14)+'px';
                 if(Math.sqrt((it.x-pX)**2+(it.y-pY)**2)<30){
                     playSE('item'); dogPoints+=1000; speedBoostTimer=240; invincibilityFrames=150; if(it.el)it.el.remove(); items.splice(n,1);
                 }
@@ -224,13 +226,25 @@
             inputArea.style.display="block"; btnSave.style.display=btnShare.style.display="block"; btnRetry.style.display="none";
         }
 
-        btnContinue.onclick = () => { life = 4; hasContinued = true; dialog.style.display = "none"; gameActive = true; requestAnimationFrame(loop); updateView(); };
+        btnContinue.onclick = () => { life = 4; hasContinued = true; dialog.style.display = "none"; gameActive = true; lastFrameTime = 0; requestAnimationFrame(loop); updateView(); };
         btnSave.onclick=()=>{saveScore(nameInput.value||"おやつ大好きランぬ",finalScore); location.reload();};
         btnShare.onclick=()=>{window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`,'_blank');};
         btnRetry.onclick=()=>location.reload();
         function saveScore(n,s){let r=JSON.parse(localStorage.getItem(RANKING_KEY))||[]; r.push({name:n,score:s}); r.sort((a,b)=>b.score - a.score); r=r.slice(0,5); localStorage.setItem(RANKING_KEY,JSON.stringify(r));}
         function displayRanking(){let r=JSON.parse(localStorage.getItem(RANKING_KEY))||[]; if(!r.length)return; let h=""; r.forEach((t,i)=>{let n=t.name.length>7?t.name.substring(0,6)+'…':t.name; h+=`${i+1}. ${n} (${t.score})<br>`;}); rankListElement.innerHTML=h;}
-        function loop(){ if(gameActive){ moveEntities(); updateView(); requestAnimationFrame(loop); } }
+        
+        function loop(timestamp){ 
+            if(gameActive){
+                if(!lastFrameTime) lastFrameTime = timestamp;
+                let dt = timestamp - lastFrameTime;
+                lastFrameTime = timestamp;
+                let dtMultiplier = dt / (1000 / 60);
+
+                moveEntities(dtMultiplier); 
+                updateView(); 
+                requestAnimationFrame(loop); 
+            } 
+        }
     </script>
 </body>
 </html>
